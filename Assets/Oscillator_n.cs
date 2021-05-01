@@ -14,10 +14,13 @@ using System.Collections;
 public class Oscillator_n : MonoBehaviour
 {
    
+   public AccLowPass accfilter;
+   
    public Text x1;
    public Text x2;
    public Text t;
    public Text status;
+   public Text freqmonitor;
    public double frequency = 440.0;
    
    private double increment;
@@ -25,6 +28,8 @@ public class Oscillator_n : MonoBehaviour
    private double sampling_frequency = 48000.0;
    private int n = 0;
    private bool once = false;
+   private float endFreq;
+   private int mode; // Waveform mode
    
    private double gx = 0;
    private double acc1;
@@ -44,38 +49,11 @@ public class Oscillator_n : MonoBehaviour
    public List<float> nf;
    public int thisFreq;
    
-   /*GameObject CreateText(Transform canvas_transform, float x, float y, string text_to_print, int font_size, Color text_color)
-	{
-		GameObject UItextGO = new GameObject("Text2");
-		UItextGO.transform.SetParent(canvas_transform);
-
-		RectTransform trans = UItextGO.AddComponent<RectTransform>();
-		trans.anchoredPosition = new Vector2(x, y);
-
-		Text text = UItextGO.AddComponent<Text>();
-		text.text = text_to_print;
-		text.fontSize = font_size;
-		text.color = text_color;
-
-		return UItextGO;
-	}*/
-   
-   IEnumerator wait(){
-	   gain = volume;
-		if(once == false){
-			changeNote(1);
-			once = true;
-		}
-		
-		//CreateText(GameObject.Find("Canvas"), 0f, 0f, "coroutine delayed", 14, new Color(1f,1f,1f,1f));
-		yield return new WaitForSeconds(2f);
-		x1.text = "coroutine delayed";
-   }
-   
- 
    
    void Start()
    {
+	     
+	   
 	   
 	   // A Major scale
 	   
@@ -98,16 +76,8 @@ public class Oscillator_n : MonoBehaviour
 	   }
    }
    
-   public void down(){
-		gain = volume;
-		frequency = frequencies[thisFreq];
-		thisFreq += 1;
-		thisFreq = thisFreq % nf.Count;
-   }
-   
-   public void up(){
-	   
-	   gain = 0;
+   public void changeMode(int arg){
+	   mode = arg;
    }
    
    public void changeNote(int dir){
@@ -138,25 +108,20 @@ public class Oscillator_n : MonoBehaviour
    }
    
    void Update(){
-	  /*
-	  if(Input.GetKeyDown(KeyCode.Space))
-	   {
-			gain = volume;
-			frequency = nf[thisFreq];
-			thisFreq += 1;
-			thisFreq = thisFreq % nf.Count;
-			n++;
-			x1.text = n.ToString();
-		}
-	   if(Input.GetKeyUp(KeyCode.Space))
-	   {
-		   gain = 0;
-	   }*/
+	   
+	   // Input.acceleration.x but filtered and absolute value
+	   endFreq = Mathf.Abs(accfilter.filterAccelValue(true)[0]) * 400;
 	  
-	   
-	   
+	  
 	   // Veiksmas vyksta kas tris sekundes
-	   if(Time.time - gx > 3){
+	   /*
+		  Dabar mano kodas nuskaito acc1, po dvieju sekundziu nuskaito acc2 ir skaiciuoja skirtuma tarp ju, tai nebutinai atspindi visa akcelerometro pokyti kuris ivyko per ta laiko tarpa, nes acc1 == acc2 imanoma
+		  
+		  sprendimas: dX += sumuoti rodiklio reiksme kiekviena kadra? (kaip nustatyti krypti, ar tai svarbu?)
+		  
+		  */
+		  
+		  /*
 		   if(deltaonce == false){
 			   acc1 = Input.acceleration.x;
 			   x1.text = acc1.ToString();
@@ -166,8 +131,8 @@ public class Oscillator_n : MonoBehaviour
 			   status.text = "Measuring...";
 		   }
 		   
-		   // Tikrinamas pokytis per dvi sekundes
-		   if(Time.time - tx >= 2)
+		   // Tikrinamas pokytis 
+		   if(Time.time - tx >= 0.1)
 		   {
 			   acc2 = Input.acceleration.x;
 			   x2.text = acc2.ToString();
@@ -179,50 +144,75 @@ public class Oscillator_n : MonoBehaviour
 			   status.text = "Measured!";
 			   gx = Time.time;
 		   }
-	   }
 	   
 	   
-	   if(Time.time > nextNoteTime){
+	   if(dX >= 100 && dX != 0 && Time.time == gx){
 		   if(Input.acceleration.x > 0.5f)
 		   {	
 				gain = volume;
 				if(once == false){
 					changeNote(1);
-					once = true;
+					once = true;r interpolation
 					nextNoteTime = Time.time + noteCooldown;
 				}
 		
 			}
 	   }
 		
-	   if(Input.acceleration.x < 0.5f && Input.acceleration.x > -0.5f)
-	   {
-		   once = false;
-		   gain = 0;
-	   }
-	   
-	   if(Time.time > nextNoteTime){
-			if(Input.acceleration.x < -0.5f)
+		   if(Input.acceleration.x < 0.5f && Input.acceleration.x > -0.5f)
 		   {
-				gain = volume;
-				if(once == false)
-				{
-					changeNote(-1);
-					once = true;
-					nextNoteTime = Time.time + noteCooldown;
-				}	
-			}
-	    }
-   }
+			   once = false;
+			   gain = 0;
+		   }
+	   
+		   if(dX >= 100 && dX != 0 && Time.time == gx){
+				if(Input.acceleration.x < -0.5f)
+			   {
+					gain = volume;
+					if(once == false)
+					{
+						changeNote(-1);
+						once = true;
+						nextNoteTime = Time.time + noteCooldown;
+					}	
+				}
+		   } */
+	   }
    
 	  void OnAudioFilterRead(float[] data, int channels)
 	  {	
-	   increment = frequency * 2.0 * Mathf.PI / sampling_frequency;
+	   //Vietoj vaiksciojimo per masyva darysiu tolydu
+	   //increment = frequency * 2.0 * Mathf.PI / sampling_frequency;
+	   
+	   
+	   gain = volume;
+	   
+	   
+	   increment = endFreq  * 2.0 * Mathf.PI / sampling_frequency;
+	   freqmonitor.text = endFreq.ToString();
 	   
 	   for (int i = 0; i < data.Length; i += channels)
 	   {
 		   phase += increment;
-		   data[i] = (float)(gain * Mathf.Sin((float)phase));
+		  
+		   if(mode == 1){
+			   // Sine wave
+			   data[i] = (float)(gain * Mathf.Sin((float)phase)); 
+			}
+			
+		   if(mode == 2){
+			   // Sqaure wave
+			   if(gain * Mathf.Sin((float)phase) >=  0 * gain){
+				   data[i] = (float)gain * 0.6f;
+			   } else {
+				   data[i] = (-(float)gain) * 0.6f;
+			   }
+		   }
+		   
+		   if(mode == 3){
+			   // Triangle wave
+			   data[i] = (float) (gain * (double)Mathf.PingPong ((float) phase, 1.0f));
+		   }
 		   
 		   if(channels == 2)
 		   {

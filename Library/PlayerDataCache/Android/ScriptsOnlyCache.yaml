@@ -1,6 +1,8 @@
 ScriptsOnlyBuild:
   usedScripts:
     Assembly-CSharp.dll:
+    - AccLowPass
+    - BtnManager
     - Oscillator_n
     - accel
     - playBtn
@@ -58,6 +60,10 @@ ScriptsOnlyBuild:
       Script: {instanceID: 12940}
     - Class: 114
       Script: {instanceID: 12984}
+    - Class: 114
+      Script: {instanceID: 18448}
+    - Class: 114
+      Script: {instanceID: 21364}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -233,7 +239,7 @@ ScriptsOnlyBuild:
     className: Shadow
   - hash:
       serializedVersion: 2
-      Hash: 47ebfd510ba842e44dddbdcf9ee8a6ba
+      Hash: a4a357c8960105e6cefba8aa2b670941
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: Oscillator_n
@@ -525,7 +531,37 @@ ScriptsOnlyBuild:
     assemblyName: Unity.Timeline.dll
     namespaceName: UnityEngine.Timeline
     className: PlayableTrack
+  - hash:
+      serializedVersion: 2
+      Hash: 71bb6a6b6c8f052f948db64c7dd3ca4f
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: AccLowPass
+  - hash:
+      serializedVersion: 2
+      Hash: 57137333e018518834659c191e9a755b
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: SineBtn
+  - hash:
+      serializedVersion: 2
+      Hash: 57137333e018518834659c191e9a755b
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: SquareBtn
+  - hash:
+      serializedVersion: 2
+      Hash: 57137333e018518834659c191e9a755b
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: TriangleBtn
+  - hash:
+      serializedVersion: 2
+      Hash: 90b642a3e1e3be4188200ea54912772f
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: BtnManager
   platform: 13
   scenePathNames:
   - Assets/asd.unity
-  playerPath: C:/Users/Nas/Dropbox/bakalaurui/synth.apk
+  playerPath: C:/Users/Nas/Dropbox/synth.apk
