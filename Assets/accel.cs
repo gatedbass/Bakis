@@ -10,17 +10,25 @@ public class accel : MonoBehaviour
 	public Text yt;
 	public Text	zt;
 	
+	private Gyroscope m_Gyro;
+	
 	//private bool backswing = false;
 	
 	// Start is called before the first frame update
     void Start()
     {
-        
+        m_Gyro = Input.gyro;
+		m_Gyro.enabled = true;
     }
 
     // Update is called once per frame
     void Update()
     {
+		
+		//xt.text = Input.gyro.rotationRate.x.ToString();
+		//yt.text = Input.gyro.rotationRate.y.ToString();
+	    //zt.text = Input.gyro.rotationRate.z.ToString();
+		
         xt.text = Input.acceleration.x.ToString();
 		yt.text = Input.acceleration.y.ToString();
 		zt.text = Input.acceleration.z.ToString();

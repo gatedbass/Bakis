@@ -15,19 +15,20 @@ public class Oscillator_n : MonoBehaviour
 {
    
    public AccLowPass accfilter;
+   public MixLevels fxcontrol;
    
    public Text x1;
    public Text x2;
    public Text t;
    public Text status;
    public Text freqmonitor;
-   public double frequency = 440.0;
+   public double frequency;
    
    private double increment;
    private double phase;
-   private double sampling_frequency = 48000.0;
-   private int n = 0;
-   private bool once = false;
+   private double sampling_frequency;
+   private int n;
+   private bool once;
    private float endFreq;
    private int mode; // Waveform mode
    
@@ -39,34 +40,58 @@ public class Oscillator_n : MonoBehaviour
    private bool deltaonce = false;
    
    public float gain;
-   public float volume = 0.1f;
+   public float volume;
+   public bool enabled;
+   public bool continuous;
+   public bool manifx1;
+   public bool manifx2;
+   private bool stopnegate;
    public float noteCooldown = 1f;
    private float nextNoteTime = 0;
+
    
    
    
-   public float[] frequencies;
+   private double[] tones; // all 12 tones of a piano
+   public double[] frequencies;
    public List<float> nf;
    public int thisFreq;
+  
    
    
    void Start()
    {
-	     
-	   
-	   
-	   // A Major scale
-	   
-	   frequencies = new float[8];
-	   frequencies[0] = 440;
-	   frequencies[1] = 494;
-	   frequencies[2] = 554;
-	   frequencies[3] = 587;
-	   frequencies[4] = 659;
-	   frequencies[5] = 740;
-	   frequencies[6] = 831;
-	   frequencies[7] = 880;
-	   
+	  
+	//Unity kintamuju inicializavimas vyksta cia
+	
+		manifx1 = false;
+		manifx2 = false;
+		once = false;
+		sampling_frequency = 48000.0;
+		frequencies = new double[8];
+		mode = 1;
+		continuous = false;
+		stopnegate = false;
+		thisFreq = 0;
+		
+		
+		// sita gali tekti perrasyt kaip key:value pair dictionary
+		tones = new double[12];
+		tones[0] =	16.351f; // C		
+		tones[1] =	17.324f; // C#		
+		tones[2] =	18.354f; // D		
+		tones[3] =	19.445f; // D#		
+		tones[4] =	20.601f; // E		
+		tones[5] =	21.827f; // F
+		tones[6] =	23.124f; // F#		
+		tones[7] =	24.449f; // G		
+		tones[8] =	25.959f ;// G#		
+		tones[9] = 27.5f;   // A	
+		tones[10] =	29.135f; // A#
+		tones[11] = 30.868f; // B
+		
+		changeKey(4,2,"minor");
+		frequency = frequencies[thisFreq];
 	   
 	   // Creating new list for lower octave notes
 	   nf = new List<float>(8);
@@ -74,6 +99,67 @@ public class Oscillator_n : MonoBehaviour
 	   foreach(float i in frequencies){
 		   nf.Add(i / 4);
 	   }
+   }
+   
+   
+   // Pakeicia grojimo tonacija
+   // (gamos nata, oktava, mazorine/minorine scale)
+   public void changeKey(int note, double oct, string scale){
+	   
+	   int index = 0, j = 0;
+	   int[] steps = new int[7];
+	   
+	   oct = Math.Pow(2, oct);
+	  
+	   if(scale == "major"){
+		  // mazorines dermes schema
+		  steps[0] = 2;
+		  steps[1] = 2;
+		  steps[2] = 1;
+		  steps[3] = 2;
+		  steps[4] = 2;
+		  steps[5] = 2;
+		  steps[6] = 1;
+ 		  //{2,2,1,2,2,2};
+	   } else if (scale == "minor") {
+		   // minorines dermes schema
+		  steps[0] = 2;
+		  steps[1] = 1;
+		  steps[2] = 2;
+		  steps[3] = 2;
+		  steps[4] = 1;
+		  steps[5] = 2;
+		  steps[6] = 2;
+		  //{2,1,2,2,1,2};
+	   }
+	   
+	   // 12 nes einama per dvylika chromatines gamos natu
+	   for(int i = 0; i < 12; i++){
+		   if(note == i){
+			 // kai atrandama nata, kurios gama norima sudaryti, jinai nustatoma kaip gamos pirmas laipsnis
+			   frequencies[0] = tones[i] * oct;
+			   Debug.Log("freq pries cikla: " +frequencies[0]);
+			   index = i;
+			   
+			   for(int k = 1; k < 8; k++){
+				  
+				   index += steps[j];
+				    if(index > 11){
+					   index -= 12;
+					   oct = oct * 2;
+					 
+				   }
+					frequencies[k] = tones[index] * oct;
+					Debug.Log("freq po ciklo: " +frequencies[k]);
+					Debug.Log("index (tone): " + index);
+					Debug.Log("j (step before)): " + j);
+					j++;
+			   }
+			   
+			   break;
+		   }
+	   }
+	   
    }
    
    public void changeMode(int arg){
@@ -86,21 +172,21 @@ public class Oscillator_n : MonoBehaviour
 			frequency = frequencies[thisFreq];
 			thisFreq += 1;
 			// padaro indekso reseta
-			thisFreq = thisFreq % nf.Count;
+			thisFreq = thisFreq % 8;
 			n++;
 			//x1.text = n.ToString();
 		} else if (dir == -1){
 			if(thisFreq == 0){	
 				frequency = frequencies[thisFreq];
 				// padaro indekso reseta
-				thisFreq = thisFreq % nf.Count;
+				thisFreq = thisFreq % 8;
 				n++;
 				//x1.text = n.ToString();;
 			} else {
 				thisFreq -= 1;
 				frequency = frequencies[Mathf.Abs(thisFreq)];
 				// padaro indekso reseta
-				thisFreq = thisFreq % nf.Count;
+				thisFreq = thisFreq % 8;
 				n++;
 				//x1.text = n.ToString();
 			}
@@ -109,9 +195,45 @@ public class Oscillator_n : MonoBehaviour
    
    void Update(){
 	   
+	   volume = enabled ? 0.1f : 0f;
+	   
+	   if(Input.GetKeyDown(KeyCode.Space))
+	   {
+			gain = volume;
+			frequency = frequencies[thisFreq];
+			thisFreq += 1;
+			thisFreq = thisFreq % 8;
+			n++;
+			//nt.text = n.ToString();
+		}
+	   if(Input.GetKeyUp(KeyCode.Space))
+	   {
+		   gain = 0;
+	   }
+	   
+	   if(Input.GetKeyDown(KeyCode.RightArrow))
+	   {
+			gain = volume;
+			changeNote(1);
+		}
+	   if(Input.GetKeyUp(KeyCode.RightArrow))
+	   {
+		   gain = 0;
+	   }
+	   
+	    if(Input.GetKeyDown(KeyCode.LeftArrow))
+	   {
+			gain = volume;
+			changeNote(-1);
+		}
+	   if(Input.GetKeyUp(KeyCode.LeftArrow))
+	   {
+		   gain = 0;
+	   }
+	   
 	   // Input.acceleration.x but filtered and absolute value
-	   endFreq = Mathf.Abs(accfilter.filterAccelValue(true)[0]) * 400;
-	  
+	   endFreq = accfilter.filterAccelValue(true)[0];
+	 
 	  
 	   // Veiksmas vyksta kas tris sekundes
 	   /*
@@ -121,76 +243,95 @@ public class Oscillator_n : MonoBehaviour
 		  
 		  */
 		  
-		  /*
+		 
 		   if(deltaonce == false){
-			   acc1 = Input.acceleration.x;
-			   x1.text = acc1.ToString();
+			   acc1 = endFreq;
+			   //x1.text = acc1.ToString();
 			   tx = Time.time;
 			   deltaonce = true;
-			   Debug.Log("deltaonce =" + deltaonce);
-			   status.text = "Measuring...";
+			   //Debug.Log("deltaonce =" + deltaonce);
+			   //status.text = "Measuring...";
 		   }
 		   
 		   // Tikrinamas pokytis 
-		   if(Time.time - tx >= 0.1)
+		   if(Time.time - tx >= 0.05)
 		   {
-			   acc2 = Input.acceleration.x;
-			   x2.text = acc2.ToString();
+			   acc2 = endFreq;
+			   //x2.text = acc2.ToString();
 			   dX = (acc2 - acc1) * 10000;
 			   tx = Time.time;
-			   t.text = dX.ToString();
+			   //t.text = dX.ToString();
 			   deltaonce = false;
-			   Debug.Log("deltaonce =" + deltaonce);
-			   status.text = "Measured!";
+			   //Debug.Log("deltaonce =" + deltaonce);
+			   //status.text = "Measured!";
 			   gx = Time.time;
 		   }
 	   
-	   
-	   if(dX >= 100 && dX != 0 && Time.time == gx){
-		   if(Input.acceleration.x > 0.5f)
-		   {	
-				gain = volume;
-				if(once == false){
-					changeNote(1);
-					once = true;r interpolation
-					nextNoteTime = Time.time + noteCooldown;
-				}
-		
-			}
-	   }
-		
-		   if(Input.acceleration.x < 0.5f && Input.acceleration.x > -0.5f)
-		   {
-			   once = false;
-			   gain = 0;
+		   if(!manifx1 && !manifx2){
+			   if(dX >= 400 && dX != 0 && Time.time == gx){
+				   if(endFreq > 0.5f)
+				   {	
+						if(once == false){
+							changeNote(1);
+							once = true;
+							gain = volume;
+							nextNoteTime = Time.time + noteCooldown;
+						}
+				
+					}
+			   }
+				
+				   if(endFreq < 0.5f && endFreq > -0.5f){
+					   once = false;
+					   gain = 0;
+				   }
+			   
+				   if(dX >= 400 && dX != 0 && Time.time == gx){
+						if(endFreq < -0.5f)
+					   {
+							if(once == false)
+							{
+								changeNote(-1);
+								once = true;
+								gain = volume;
+								nextNoteTime = Time.time + noteCooldown;
+								
+							}	
+						}
+				   }
 		   }
-	   
-		   if(dX >= 100 && dX != 0 && Time.time == gx){
-				if(Input.acceleration.x < -0.5f)
-			   {
-					gain = volume;
-					if(once == false)
-					{
-						changeNote(-1);
-						once = true;
-						nextNoteTime = Time.time + noteCooldown;
-					}	
-				}
-		   } */
+		   
+		   if(manifx1){
+			   fxcontrol.SetLowPassFrq(Mathf.Clamp(Mathf.Abs(endFreq) * 22000, 800, 22000));
+		   }
+		   
+		   if(manifx2){
+			   fxcontrol.SetChorusRate(Mathf.Clamp(Mathf.Abs(endFreq) * 10, 0, 20));
+		   }
 	   }
    
 	  void OnAudioFilterRead(float[] data, int channels)
 	  {	
 	   //Vietoj vaiksciojimo per masyva darysiu tolydu
-	   //increment = frequency * 2.0 * Mathf.PI / sampling_frequency;
+	   increment = frequency * 2.0 * Mathf.PI / sampling_frequency;
+	   
+	   if(continuous){
+		   gain = volume;
+		   stopnegate = true;
+	   } else {
+		   if(stopnegate){
+			   gain = 0;
+			   stopnegate = false;
+		   }
+	   }
 	   
 	   
-	   gain = volume;
+	   //increment = endFreq  * 2.0 * Mathf.PI / sampling_frequency;
 	   
+	   //freqmonitor.text = endFreq.ToString();
+	   //freqmonitor.text = frequency.ToString();
 	   
-	   increment = endFreq  * 2.0 * Mathf.PI / sampling_frequency;
-	   freqmonitor.text = endFreq.ToString();
-	   
+	   //Debug.Log("Synth 2 running");
 	   for (int i = 0; i < data.Length; i += channels)
 	   {
 		   phase += increment;
